@@ -14,5 +14,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "comment",
         ]
         extra_kwargs = {
-            "blog": {"write_only": True}, 
+            "blog": {
+                "write_only": True
+            },  # optional feild. Only required for add and update
         }

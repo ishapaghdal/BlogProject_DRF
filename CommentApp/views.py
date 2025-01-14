@@ -11,46 +11,66 @@ class CommentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request,pk):
-        data = request.data
-        user = request.user
-        
-        blog = get_object_or_404(Blog, id=pk, is_published=True)
+        try:
+            data = request.data
+            user = request.user
+            
+            blog = get_object_or_404(Blog, id=pk, is_published=True)
 
-        comment = Comment.objects.create(
-            comment_author=user,
-            blog=blog,
-            comment=data.get("comment", "")
-        )
-        
-        serializer = CommentSerializer(comment)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            comment = Comment.objects.create(
+                comment_author=user,
+                blog=blog,
+                comment=data.get("comment", "")
+            )
+            
+            serializer = CommentSerializer(comment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Blog.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Error fetching blog."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     def get(self, request, pk=None):
-        if not pk:
-            return Response(
-                {"error": "Blog ID is required to fetch comments."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        
-        blog = get_object_or_404(Blog, id=pk)
-        comments = Comment.objects.filter(blog=blog)
+        try:
+            if not pk:
+                return Response(
+                    {"error": "Blog ID is required to fetch comments."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            blog = get_object_or_404(Blog, id=pk)
+            comments = Comment.objects.filter(blog=blog)
 
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            serializer = CommentSerializer(comments, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Blog.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Error fetching blog."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     def delete(self, request, pk):
-        user = request.user
 
-        comment = get_object_or_404(Comment, id=pk)
-        
-        if comment.blog.author == user:
-            comment.delete()
+        try:
+            user = request.user
+
+            comment = get_object_or_404(Comment, id=pk)
+            
+            if comment.blog.author == user:
+                comment.delete()
+                return Response(
+                    {"message": "Comment deleted successfully."},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
+            else:
+                return Response(
+                    {"error": "You are not authorized to delete this comment."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+        except Comment.DoesNotExist:
             return Response(
-                {"message": "Comment deleted successfully."},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        else:
-            return Response(
-                {"error": "You are not authorized to delete this comment."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"success": False, "message": "Error fetching comment."},
+                status=status.HTTP_404_NOT_FOUND,
             )

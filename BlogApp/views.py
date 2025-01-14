@@ -18,47 +18,97 @@ class BlogView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        data = request.data
-        user = request.user
+        try:
+            data = request.data
+            user = request.user
 
-        title = data.get("title")
-        content = data.get("content")
-        publication_date = now().date() if data.get("is_published", False) else None
-        category_data = data.get("category")
-        tags_data = data.get("tags", [])
+            """
+            Extract data fields
+            """
+            title = data.get("title")
+            content = data.get("content")
+            publication_date = now().date() if data.get("is_published", False) else None
+            category_data = data.get("category")
+            tags_data = data.get("tags", [])
 
-        category = None
-        if category_data:
-            category, _ = Category.objects.get_or_create(name=category_data)
+            # create category
+            category = None
+            if category_data:
+                category, _ = Category.objects.get_or_create(name=category_data)
 
-        blog = Blog.objects.create(
-            title=title,
-            content=content,
-            publication_date=publication_date,
-            author=user,
-            category=category,
-            is_published=data.get("is_published", False),
-        )
+            # create tags
+            tag_instances = []
+            for tag_name in tags_data:
+                tag, _ = Tag.objects.get_or_create(name=tag_name)
+                tag_instances.append(tag)
 
-        tag_instances = []
-        for tag_name in tags_data:
-            tag, _ = Tag.objects.get_or_create(name=tag_name)
-            tag_instances.append(tag)
+            # create blog
+            blog = Blog.objects.create(
+                title=title,
+                content=content,
+                publication_date=publication_date,
+                author=user,
+                category=category,
+                is_published=data.get("is_published", False),
+            )
 
-        blog.tags.set(tag_instances)
+            # set tags
+            blog.tags.set(tag_instances)
 
-        serializer = BlogSerializer(blog)
-        return Response(serializer.data, status=201)
+            serializer = BlogSerializer(blog)
+            return Response(
+                {
+                    "success": True,
+                    "message": "Blog added successfully",
+                    "blog": {
+                        "id": blog.id,
+                        "title": blog.title,
+                        "content": blog.content,
+                        "is_published": blog.is_published,
+                        "publication_date": blog.publication_date,
+                        "category": category.name,
+                        "tags": tags_data,
+                    },
+                },
+                status=201,
+            )
+            # return Response(serializer.data, status=201)
+        except Blog.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Error adding Blog."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     def get(self, request, pk=None):
-        if pk:
-            blog = get_object_or_404(Blog, id=pk)
-            serializer = BlogSerializer(blog)
-            return Response(serializer.data, status=200)
-        else:
-            blogs = Blog.objects.filter(is_published=True)
-            serializer = BlogSerializer(blogs, many=True)
-            return Response(serializer.data, status=200)
+        try:
+            if pk:
+                blog = get_object_or_404(Blog, id=pk)
+                serializer = BlogSerializer(blog)
+
+                return Response(
+                    {
+                        "success": True,
+                        "message": "Blog found ",
+                        "data": serializer.data,
+                    },
+                    status=201,
+                )
+            else:
+                blogs = Blog.objects.filter(is_published=True)
+                serializer = BlogSerializer(blogs, many=True)
+                return Response(
+                    {
+                        "success": True,
+                        "message": "Blog found ",
+                        "data": serializer.data,
+                    },
+                    status=200,
+                )
+        except Blog.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Blog not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     def put(self, request, pk):
         user = request.user
@@ -73,17 +123,12 @@ class BlogView(APIView):
             blog.publication_date = now().date()
             blog.save()
 
+            serializer = BlogSerializer(blog)
             return Response(
                 {
                     "success": True,
-                    "message": "Blog updated successfully",
-                    "blog": {
-                        "id": blog.id,
-                        "title": blog.title,
-                        "content": blog.content,
-                        "is_published": blog.is_published,
-                        "publication_date": blog.publication_date,
-                    },
+                    "message": "Blog updated succsessfully.",
+                    "data": serializer.data,
                 },
                 status=200,
             )
@@ -114,61 +159,67 @@ class BlogView(APIView):
 
 class BlogFilter(APIView):
     def get(self, request):
-        author = request.query_params.get("author")
-        category = request.query_params.get("category")
-        tags = request.query_params.getlist("tags")
-        search_query = request.query_params.get("search")
+        try:
+            author = request.query_params.get("author")
+            category = request.query_params.get("category")
+            tags = request.query_params.getlist("tags")
+            search_query = request.query_params.get("search")
 
-        queryset = Blog.objects.filter(is_published=True)
+            queryset = Blog.objects.filter(is_published=True)
 
-        if author:
-            queryset = queryset.filter(author__id=author)
-        if category:
-            queryset = queryset.filter(category__id=category)
-        if tags:
-            queryset = queryset.filter(tags__id__in=tags).distinct()
-        if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query)
-                | Q(content__icontains=search_query)
-                | Q(category__name__icontains=search_query)
-                | Q(tags__name__icontains=search_query)
-                | Q(author__username__icontains=search_query)
+            if author:
+                queryset = queryset.filter(author__id=author)
+            if category:
+                queryset = queryset.filter(category__id=category)
+            if tags:
+                queryset = queryset.filter(tags__id__in=tags).distinct()
+            if search_query:
+                queryset = queryset.filter(
+                    Q(title__icontains=search_query)
+                    | Q(content__icontains=search_query)
+                    | Q(category__name__icontains=search_query)
+                    | Q(tags__name__icontains=search_query)
+                    | Q(author__username__icontains=search_query)
+                )
+
+            # Pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 10
+            paginated_queryset = paginator.paginate_queryset(queryset, request)
+
+            # Serialize data
+            serializer = BlogSerializer(paginated_queryset, many=True)
+
+            # Return paginated response
+            return paginator.get_paginated_response(serializer.data)
+        
+        except Blog.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Error fetching blog"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Pagination
-        paginator = PageNumberPagination()
-        paginator.page_size = 10
-        paginated_queryset = paginator.paginate_queryset(queryset, request)
 
-        # Serialize data
-        serializer = BlogSerializer(paginated_queryset, many=True)
-
-        # Return paginated response
-        return paginator.get_paginated_response(serializer.data)
-    
 class PublishBlog(APIView):
     def get(self, request, pk=None):
         user = request.user
-        blog = Blog.objects.get(id = pk, author = user)
+        blog = Blog.objects.get(id=pk, author=user)
 
         blog.publication_date = now().date()
         blog.is_published = True
         blog.save()
 
         return Response(
-                {
-                    "success": True,
-                    "message": "Blog published successfully",
-                    "blog": {
-                        "id": blog.id,
-                        "title": blog.title,
-                        "content": blog.content,
-                        "is_published": blog.is_published,
-                        "publication_date": blog.publication_date,
-                        # 'comments': blog.comments_set.count()
-                    },
+            {
+                "success": True,
+                "message": "Blog published successfully",
+                "blog": {
+                    "id": blog.id,
+                    "title": blog.title,
+                    "content": blog.content,
+                    "is_published": blog.is_published,
+                    "publication_date": blog.publication_date,
                 },
-                status=200,
-            )
-        
+            },
+            status=200,
+        )

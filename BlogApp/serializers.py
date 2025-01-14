@@ -37,24 +37,33 @@ class BlogSerializer(serializers.ModelSerializer):
             "tags",
             "is_published",
             "comment_count",
-            "comments"
+            "comments",
         )
-        read_only_fields = (
-            "author",
-        )
+        read_only_fields = ("author",)
         # depth = 1
 
     def get_comment_count(self, obj):
         return obj.comments.count()
 
     def create(slef, validated_data):
+        
+        """
+        pop tags and category from the data
+        """
         tags_data = validated_data.pop("tags", [])
         category_data = validated_data.pop("category")
 
+        """
+        create Category 
+        """
         category = Category.objects.get_or_create(name=category_data["name"])
 
-        blog = Blog.objects.create(category=category, **validated_data)
-
+        """
+        create Tag 
+        """
         for tag in tags_data:
             Tag.objects.get_or_create(name=tag["name"])
             blog.tags.add(tag)
+
+        # save blog
+        blog = Blog.objects.create(category=category, **validated_data)
