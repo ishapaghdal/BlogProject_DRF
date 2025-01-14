@@ -65,10 +65,8 @@ class BlogView(APIView):
         data = request.data
 
         try:
-            # Fetch the blog instance
             blog = Blog.objects.get(id=pk, author=user)
 
-            # Update the blog details
             blog.title = data.get("title", blog.title)
             blog.content = data.get("content", blog.content)
             blog.is_published = data.get("is_published", blog.is_published)
@@ -85,7 +83,6 @@ class BlogView(APIView):
                         "content": blog.content,
                         "is_published": blog.is_published,
                         "publication_date": blog.publication_date,
-                        # 'comments': blog.comments_set.count()
                     },
                 },
                 status=200,
@@ -155,7 +152,7 @@ class PublishBlog(APIView):
         user = request.user
         blog = Blog.objects.get(id = pk, author = user)
 
-        blog.publish_date = now().date()
+        blog.publication_date = now().date()
         blog.is_published = True
         blog.save()
 

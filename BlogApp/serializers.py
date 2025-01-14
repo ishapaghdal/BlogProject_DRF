@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Blog, Tag, Category
-
+from CommentApp.serializers import CommentSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,7 +12,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
-    # blog_list = BlogSerializer(many=True, read_only=True)
     class Meta:
         model = Tag
         fields = (
@@ -24,8 +23,8 @@ class TagSerializer(serializers.ModelSerializer):
 class BlogSerializer(serializers.ModelSerializer):
 
     comment_count = serializers.SerializerMethodField()
-    # tags = serializers.ListField(child=serializers.CharField(max_length=20),write_only=True)
     tags = TagSerializer(read_only=True, many=True)
+    comments = CommentSerializer(read_only=True, many=True)
 
     class Meta:
         model = Blog
@@ -38,12 +37,12 @@ class BlogSerializer(serializers.ModelSerializer):
             "tags",
             "is_published",
             "comment_count",
+            "comments"
         )
         read_only_fields = (
             "author",
-            "comments",
         )
-        depth = 1
+        # depth = 1
 
     def get_comment_count(self, obj):
         return obj.comments.count()
