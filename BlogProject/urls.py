@@ -18,10 +18,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.contrib import admin
 from django.urls import path,include
 from UserApp.urls import urlpatterns as user_urls
+from BlogApp.urls import urlpatterns as blog_urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/token/',TokenObtainPairView.as_view()),
     path('api/token/refresh',TokenRefreshView.as_view()),
-    path('',include(user_urls))
+    path('',include(user_urls)),
+    path('',include(blog_urls))
 ]
