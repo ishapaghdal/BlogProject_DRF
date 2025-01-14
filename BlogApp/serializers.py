@@ -23,7 +23,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 class BlogSerializer(serializers.ModelSerializer):
 
-    comment_count = serializers.IntegerField(read_only=True)
+    comment_count = serializers.SerializerMethodField()
     # tags = serializers.ListField(child=serializers.CharField(max_length=20),write_only=True)
     tags = TagSerializer(read_only=True, many=True)
 
@@ -44,6 +44,10 @@ class BlogSerializer(serializers.ModelSerializer):
             "comments",
         )
         depth = 1
+
+    def get_comment_count(self, obj):
+        # Replace `comments` with the actual related name of your comments field
+        return obj.comments.count()
 
     def create(slef, validated_data):
         tags_data = validated_data.pop("tags", [])
