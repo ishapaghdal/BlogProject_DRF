@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils.timezone import now
 from .models import Blog, Tag, Category
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 
 class BlogView(APIView):
@@ -16,7 +17,7 @@ class BlogView(APIView):
 
         title = data.get("title")
         content = data.get("content")
-        publication_date = now() if data.get("is_published", False) else None
+        publication_date = now().date()  if data.get("is_published", False) else None
         category_data = data.get("category")
         tags_data = data.get("tags", [])
 
@@ -42,3 +43,14 @@ class BlogView(APIView):
 
         serializer = BlogSerializer(blog)
         return Response(serializer.data, status=201)
+    
+    def get(self, request, pk=None):
+        if pk:
+            blog = get_object_or_404(Blog, id=pk)
+            serializer = BlogSerializer(blog)
+            return Response(serializer.data, status=200)
+        else:
+            blogs = Blog.objects.filter(is_published=True)
+            serializer = BlogSerializer(blogs, many=True)
+            return Response(serializer.data, status=200)
+

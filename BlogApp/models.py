@@ -12,7 +12,7 @@ class Tag(models.Model):
     
 class Blog(models.Model):
     title = models.CharField(max_length=40)
-    publication_date = models.DateField(null=True)
+    publication_date = models.DateField()
     author = models.ForeignKey('UserApp.User', on_delete=models.CASCADE, null=True)
     content = models.TextField()
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
