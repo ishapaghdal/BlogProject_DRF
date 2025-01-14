@@ -46,7 +46,6 @@ class BlogSerializer(serializers.ModelSerializer):
         depth = 1
 
     def get_comment_count(self, obj):
-        # Replace `comments` with the actual related name of your comments field
         return obj.comments.count()
 
     def create(slef, validated_data):

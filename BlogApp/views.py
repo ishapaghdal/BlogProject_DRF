@@ -115,7 +115,7 @@ class BlogView(APIView):
             )
 
 
-class BlogFilter(ListAPIView):
+class BlogFilter(APIView):
     def get(self, request):
         author = request.query_params.get("author")
         category = request.query_params.get("category")
@@ -149,3 +149,29 @@ class BlogFilter(ListAPIView):
 
         # Return paginated response
         return paginator.get_paginated_response(serializer.data)
+    
+class PublishBlog(APIView):
+    def get(self, request, pk=None):
+        user = request.user
+        blog = Blog.objects.get(id = pk, author = user)
+
+        blog.publish_date = now().date()
+        blog.is_published = True
+        blog.save()
+
+        return Response(
+                {
+                    "success": True,
+                    "message": "Blog published successfully",
+                    "blog": {
+                        "id": blog.id,
+                        "title": blog.title,
+                        "content": blog.content,
+                        "is_published": blog.is_published,
+                        "publication_date": blog.publication_date,
+                        # 'comments': blog.comments_set.count()
+                    },
+                },
+                status=200,
+            )
+        
