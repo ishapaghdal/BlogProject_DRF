@@ -13,6 +13,10 @@ from rest_framework.pagination import PageNumberPagination
 from django.db.models import Count
 from django.db.models import Q
 
+class BlogPagination(PageNumberPagination):
+    page_size = 3
+    page_size_query_param = "page_size"  
+    max_page_size = 50
 
 class BlogView(APIView):
     permission_classes = [IsAuthenticated]
@@ -88,21 +92,23 @@ class BlogView(APIView):
                 return Response(
                     {
                         "success": True,
-                        "message": "Blog found ",
-                        "data": serializer.data,
-                    },
-                    status=201,
-                )
-            else:
-                blogs = Blog.objects.filter(is_published=True)
-                serializer = BlogSerializer(blogs, many=True)
-                return Response(
-                    {
-                        "success": True,
-                        "message": "Blog found ",
+                        "message": "Blog found",
                         "data": serializer.data,
                     },
                     status=200,
+                )
+            else:
+                blogs = Blog.objects.filter(is_published=True)
+                paginator = BlogPagination()
+                paginated_blogs = paginator.paginate_queryset(blogs, request)
+                serializer = BlogSerializer(paginated_blogs, many=True)
+
+                return paginator.get_paginated_response(
+                    {
+                        "success": True,
+                        "message": "Blogs found",
+                        "data": serializer.data,
+                    }
                 )
         except Blog.DoesNotExist:
             return Response(
