@@ -1,0 +1,26 @@
+------------ templates -----------
+ 
+-- Two way binding 
+1. ng module
+2. Input and Output Decorators. 
+
+-- Control flow
+if, else, for, while, etc.
+
+--Pipes - Inbuilt + Customs
+
+-- ng-content - for controlling the content displayed within it.
+
+-- ng-templates - template or segment which you can dynamically controll.
+
+--ng-container - do not load it directly to the DOM. can be used to load the component dynamically.
+
+
+---------- Directives--------------
+
+-- ng-class , NgStyle, NgModel, NgIf, etc.
+
+---------- DI ---------------
+inject() or constructor based injection
+
+----------- Routing ---------
